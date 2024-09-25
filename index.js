@@ -1,3 +1,5 @@
+
+
 const express = require('express');
 const axios = require('axios');
 const qs = require('qs');
@@ -13,90 +15,100 @@ async function authenticate() {
   const login = "masterzoo.ua";
   const password = "menAPIzOo300";
 
-  try {
-    const response = await fetch('https://masterzoo.ua/ua/api/auth/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ login, password })
-    });
+  const response = await fetch('https://masterzoo.ua/ua/api/auth/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ login, password })
+  });
 
-    const data = await response.json();
-    console.log('Response from auth API:', data); // Логування відповіді
-    if (data.status === 'OK') {
-      return data.response.token; // Повертаємо токен
-    } else {
-      throw new Error(data.response.message || 'Невірний логін або пароль');
-    }
-  } catch (error) {
-    console.error('Помилка аутентифікації:', error.message);
-    throw error;
+  const data = await response.json();
+  if (data.status === 'OK') {
+    return data.response.token; // Повертаємо токен
+  } else {
+    throw new Error(data.response.message || 'Невірний логін або пароль');
   }
 }
 
 // Endpoint для отримання даних про товар за артикулом
 app.post('/api/product/export', async (req, res) => {
-  const { numberOrder } = req.body; // Отримуємо артикул з тіла запиту
-  console.log('Отримано номер замовлення:', numberOrder);
-
+  const { numberOrder, numberId } = req.body; // Отримуємо артикул з тіла запиту
+  console.log(numberOrder);
+  const apiUrl = `https://masterzoo.simla.com/api/v5/orders?&apiKey=opTAMNtCF3sE795yTNoHIyc5MRg2flRu&filter[numbers][]=${numberOrder}`;
+  
   try {
+    const response = await axios.get(apiUrl);
+    const items = response.data.orders[0].items;
+    
+    // Отримуємо externalId для кожного елемента
+    const externalIds = items.map(item => item.offer.externalId);
+    console.log(externalIds);
+    
     const token = await authenticate(); // Отримуємо токен
     console.log('Токен:', token); // Логування токена
 
     const payload = {
-      expr: { article: ["11399", "1111168094"] }, // Передача артикула
-      limit: 2, // Кількість товарів
-      token: token // Токен авторизації
+      expr: { article: externalIds },
+      limit: externalIds.length,
+      token: token
     };
 
     // Запит на експорт товарів
     const fetch = (await import('node-fetch')).default; // Динамічний імпорт
-    const response = await fetch('https://masterzoo.ua/api/catalog/export/', {
+    const productResponse = await fetch('https://masterzoo.ua/api/catalog/export/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload) // Передача даних
+      body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
-    console.log('Response from catalog API:', data); // Логування відповіді
+    const data = await productResponse.json();
+    console.log('Response from API:', data);
 
     if (data.status === 'OK') {
+      // Збираємо інформацію про всі продукти
       const productsInfo = data.response.products.map(product => ({
         article: product.article,
         discount: product.discount,
-        discount: product.price,
-        discount: product.price_old
+        price: product.price,
+        price_old: product.price_old
       }));
+      console.log(productsInfo);
 
-      console.log('Інформація про продукти:', productsInfo);
-
-      // Формування замовлення для оновлення
-     
-   
-
-      const items = [
-        {
-          initialPrice: 27.2, // Нова ціна
-          quantity: 1,
-          offer: {
-            externalId: 11399 // Ідентифікатор товару
-          }
+      const formattedProducts = productsInfo.map(product => {
+        let discountManualPercent = 0;
+      
+        // Перевірка, чи є знижка
+        if (product.discount > 0) {
+          discountManualPercent = product.discount; // Використовуємо знижку, якщо вона більше 0
+        } else if (product.price_old > 0) {
+          // Обчислюємо відсоток знижки, якщо discount 0
+          discountManualPercent = Math.round(((product.price_old - product.price) / product.price_old) * 100);
         }
-      ];
-      console.log('Items to be sent:', items);
-
+      
+        return {
+          offer: {
+            externalId: product.article,
+            article: product.article
+          },
+          discountManualPercent: discountManualPercent
+        };
+      });
+      
+      console.log(formattedProducts);
+      const orderData = {
+        items:formattedProducts
+    };
       const params = {
         site: 'testovyi-magazin',
-        order:JSON.stringify(items) // Передаємо оновлені товари
-        
+        order: JSON.stringify(orderData), // Передаємо оновлені items
       };
 
-   
+      const updateUrl = `https://masterzoo.simla.com/api/v5/orders/${numberId}/edit?by=id&apiKey=jazPM3ufgIzByAktZDi0lTtT9KPSJHHz`;
+console.log('Items to be sent:', items);
 
-      const updateUrl = `https://masterzoo.simla.com/api/v5/orders/2987321/edit?by=id&apiKey=jazPM3ufgIzByAktZDi0lTtT9KPSJHHz`;
 
       try {
         const postResponse = await axios.post(updateUrl, qs.stringify(params), {
@@ -105,23 +117,19 @@ app.post('/api/product/export', async (req, res) => {
           }
         });
 
-        console.log('Response from order update API:', postResponse.data);
-        res.status(200).json(postResponse.data); // Відправляємо відповідь від API
+        res.status(200).send(postResponse.data); // Відправляємо відповідь від API
       } catch (error) {
-        console.error('Помилка в POST-запиті:', error.response ? error.response.data : error.message);
-        res.status(500).json({
-          status: 'ERROR',
-          message: 'Помилка під час оновлення замовлення: ' + (error.response ? error.response.data : error.message)
-        });
+      console.error('Помилка в POST-запиті:', error.response ? error.response.data : error.message);
+        res.status(500).send('Помилка під час оновлення замовлення. ', error.response ? error.response.data : error.message);
       }
     } else {
       res.status(500).json({
         status: 'ERROR',
-        message: 'Помилка при отриманні товарів: ' + data.response.message
+        message: 'Помилка при отриманні товарів: ' + error.response ? error.response.data : error.message
       });
     }
   } catch (error) {
-    console.error('Помилка в загальному обробленні:', error.message);
+    // Обробка помилок
     res.status(500).json({
       status: 'ERROR',
       message: 'Помилка сервера або підключення: ' + error.message
@@ -134,4 +142,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
