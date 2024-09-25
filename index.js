@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 const axios = require('axios');
 const qs = require('qs');
@@ -36,15 +34,18 @@ app.post('/api/product/export', async (req, res) => {
   const { numberOrder, numberId } = req.body; // Отримуємо артикул з тіла запиту
   console.log(numberOrder);
   const apiUrl = `https://masterzoo.simla.com/api/v5/orders?&apiKey=opTAMNtCF3sE795yTNoHIyc5MRg2flRu&filter[numbers][]=${numberOrder}`;
-  
-  try {
+
+  // Максимальна тривалість виконання (в мілісекундах)
+  const maxDuration = 20000; // 5 секунд
+
+  // Функція, що виконує ваш основний код
+  const executeMainLogic = async () => {
     const response = await axios.get(apiUrl);
     const items = response.data.orders[0].items;
-    
-    // Отримуємо externalId для кожного елемента
+
     const externalIds = items.map(item => item.offer.externalId);
     console.log(externalIds);
-    
+
     const token = await authenticate(); // Отримуємо токен
     console.log('Токен:', token); // Логування токена
 
@@ -99,16 +100,15 @@ app.post('/api/product/export', async (req, res) => {
       
       console.log(formattedProducts);
       const orderData = {
-        items:formattedProducts
-    };
+        items: formattedProducts
+      };
       const params = {
         site: 'testovyi-magazin',
         order: JSON.stringify(orderData), // Передаємо оновлені items
       };
 
       const updateUrl = `https://masterzoo.simla.com/api/v5/orders/${numberId}/edit?by=id&apiKey=jazPM3ufgIzByAktZDi0lTtT9KPSJHHz`;
-console.log('Items to be sent:', items);
-
+      console.log('Items to be sent:', items);
 
       try {
         const postResponse = await axios.post(updateUrl, qs.stringify(params), {
@@ -117,19 +117,26 @@ console.log('Items to be sent:', items);
           }
         });
 
-        res.status(200).send(postResponse.data); // Відправляємо відповідь від API
+        return postResponse.data; // Повертаємо відповідь
       } catch (error) {
-      console.error('Помилка в POST-запиті:', error.response ? error.response.data : error.message);
-        res.status(500).send('Помилка під час оновлення замовлення. ', error.response ? error.response.data : error.message);
+        console.error('Помилка в POST-запиті:', error.response ? error.response.data : error.message);
+        throw new Error('Помилка під час оновлення замовлення.');
       }
     } else {
-      res.status(500).json({
-        status: 'ERROR',
-        message: 'Помилка при отриманні товарів: ' + error.response ? error.response.data : error.message
-      });
+      throw new Error('Помилка при отриманні товарів: ' + data.response.message);
     }
+  };
+
+  // Запускаємо основну логіку з контролем тривалості
+  try {
+    const result = await Promise.race([
+      executeMainLogic(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Перевищено максимальний час виконання')), maxDuration))
+    ]);
+
+    res.status(200).send(result);
   } catch (error) {
-    // Обробка помилок
+    console.error('Помилка:', error.message);
     res.status(500).json({
       status: 'ERROR',
       message: 'Помилка сервера або підключення: ' + error.message
