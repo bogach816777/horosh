@@ -99,7 +99,7 @@ app.post('/api/product/export', async (req, res) => {
       });
       
       console.log(formattedProducts);
-      const totalPrice = formattedProducts.reduce((total, item) => {
+      const totalPrice = productsInfo.reduce((total, item) => {
         const priceWithDiscount = item.price * (1 - item.discount / 100);
         return total + priceWithDiscount;
       }, 0);
@@ -111,6 +111,7 @@ app.post('/api/product/export', async (req, res) => {
       for (const key in paymentsPay) {
           if (paymentsPay.hasOwnProperty(key)) {
               const payment = paymentsPay[key];
+              var PaymentType = payment.type;
               var PaymentAmount = formattedTotalPrice;
           }    
       }
@@ -118,6 +119,7 @@ app.post('/api/product/export', async (req, res) => {
         items: formattedProducts,
         payments: [
           {
+            "type": `${PaymentType}`,
             "amount": PaymentAmount
           }
         ],
