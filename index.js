@@ -99,71 +99,39 @@ app.post('/api/product/export', async (req, res) => {
       });
       
       console.log(formattedProducts);
-      
-      const totalPrice = productsInfo.reduce((total, product) => {
-        // Знаходимо відповідний item за article
-        const item = items.find(i => i.offer.externalId === product.article);
-        if (item) {
-          const priceWithDiscount = product.price * (1 - product.discount / 100); // Ціна зі знижкою
-          const totalItemPrice = priceWithDiscount * item.quantity; // Загальна ціна за кількість
-          return total + totalItemPrice; // Додаємо до загальної суми
-        }
-        return total; // Якщо товар не знайдено, просто повертаємо поточну загальну суму
+      const totalPrice = productsInfo.reduce((total, item) => {
+        const priceWithDiscount = item.price * (1 - item.discount / 100);
+        return total + priceWithDiscount;
       }, 0);
       
       const formattedTotalPrice = totalPrice.toFixed(2); // Форматуємо до двох знаків після коми
       
-      console.log(`Загальна ціна: ${formattedTotalPrice}`);
-      const Paymentssall = response.data.orders[0].payments;
-      const paymentKeys = Object.keys(Paymentssall); // Отримаєте масив ключів
-      const firstPaymentId = Paymentssall[paymentKeys[0]].id; // Витягуєте id першого платежу
-      console.log(firstPaymentId);
-      const orderData = {
-        items: formattedProducts
-      };
-      const orderData2 = {
+      console.log(formattedTotalPrice)
 
-        "amount": formattedTotalPrice,
-        "status": "not-paid"
-      
-    
+      const orderData = {
+        items: formattedProducts,
       };
+      
       const params = {
         site: 'testovyi-magazin',
         order: JSON.stringify(orderData), // Передаємо оновлені items
       };
-      const params2 = {
-        site: 'testovyi-magazin',
-        payment:JSON.stringify(orderData2) // Передаємо оновлені товари
-        
-      };
+
       const updateUrl = `https://masterzoo.simla.com/api/v5/orders/${numberId}/edit?by=id&apiKey=jazPM3ufgIzByAktZDi0lTtT9KPSJHHz`;
-      const updateUrl2 = `https://masterzoo.simla.com/api/v5/orders/payments/${firstPaymentId}/edit?by=id&apiKey=jazPM3ufgIzByAktZDi0lTtT9KPSJHHz`;
       console.log('Items to be sent:', items);
 
-      async function postUpdate(url, params) {
-        try {
-          const postResponse = await axios.post(url, qs.stringify(params), {
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            }
-          });
-          return postResponse.data;
-        } catch (error) {
-          console.error('Помилка в POST-запиті:', error.response ? error.response.data : error.message);
-          throw new Error('Помилка під час оновлення замовлення.');
-        }
+      try {
+        const postResponse = await axios.post(updateUrl, qs.stringify(params), {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+
+        return postResponse.data; // Повертаємо відповідь
+      } catch (error) {
+        console.error('Помилка в POST-запиті:', error.response ? error.response.data : error.message);
+        throw new Error('Помилка під час оновлення замовлення.');
       }
-      
-      const postResult1 = await postUpdate(updateUrl, params);
-      const postResult2 = await postUpdate(updateUrl2, params2);
-      const result = {
-        orderUpdate: postResult1,
-        paymentUpdate: postResult2
-      };
-      
-      res.status(200).json(result);
-      
     } else {
       throw new Error('Помилка при отриманні товарів: ' + data.response.message);
     }
