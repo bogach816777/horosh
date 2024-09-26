@@ -99,9 +99,30 @@ app.post('/api/product/export', async (req, res) => {
       });
       
       console.log(formattedProducts);
+      const totalPrice = formattedProducts.reduce((total, item) => {
+        const priceWithDiscount = item.price * (1 - item.discount / 100);
+        return total + priceWithDiscount;
+      }, 0);
+      
+      const formattedTotalPrice = totalPrice.toFixed(2); // Форматуємо до двох знаків після коми
+      
+      console.log(formattedTotalPrice)
+      const paymentsPay = response.data.orders[0].payments;
+      for (const key in paymentsPay) {
+          if (paymentsPay.hasOwnProperty(key)) {
+              const payment = paymentsPay[key];
+              var PaymentAmount = formattedTotalPrice;
+          }    
+      }
       const orderData = {
-        items: formattedProducts
+        items: formattedProducts,
+        payments: [
+          {
+            "amount": PaymentAmount
+          }
+        ],
       };
+      
       const params = {
         site: 'testovyi-magazin',
         order: JSON.stringify(orderData), // Передаємо оновлені items
