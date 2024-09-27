@@ -79,6 +79,7 @@ app.post('/api/product/export', async (req, res) => {
       console.log(productsInfo);
       let issuePersonalDiscount =0;
       if(personalDiscount){
+        console.log("Перс знижка", personalDiscount)
         if (personalDiscount == 0){
           issuePersonalDiscount = 5
         } else{
@@ -88,15 +89,14 @@ app.post('/api/product/export', async (req, res) => {
       else{
         issuePersonalDiscount == 5
       }
-     
-      console.log(`disountPersonal: ${issuePersonalDiscount}`);
+      console.log("ПІсля перевірки Перс знижка", issuePersonalDiscount)
       const formattedProducts = productsInfo.map(product => {
         let discountManualPercent = 0;
       
         // Перевірка, чи є знижка
         if (product.discount > 0) {
           discountManualPercent = product.discount; // Використовуємо знижку, якщо вона більше 0
-        } else if (product.price_old > 0) {
+        } else if (product.discount == 0) {
           // Обчислюємо відсоток знижки, якщо discount 0
           discountManualPercent = Math.round(((product.price_old - product.price) / product.price_old) * 100);
           if (discountManualPercent ==0){
@@ -134,7 +134,7 @@ app.post('/api/product/export', async (req, res) => {
       };
 
       const updateUrl = `https://masterzoo.simla.com/api/v5/orders/${numberId}/edit?by=id&apiKey=jazPM3ufgIzByAktZDi0lTtT9KPSJHHz`;
-      console.log('Items to be sent:', items);
+      
 
       try {
         const postResponse = await axios.post(updateUrl, qs.stringify(params), {
