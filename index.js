@@ -114,14 +114,6 @@ app.post('/api/product/export', async (req, res) => {
         };
       });
       
-      console.log(formattedProducts);
-      const totalPrice = productsInfo.reduce((total, item) => {
-        const priceWithDiscount = item.price * (1 - item.discount / 100);
-        return total + priceWithDiscount;
-      }, 0);
-      
-      const formattedTotalPrice = totalPrice.toFixed(2); // Форматуємо до двох знаків після коми
-      
       console.log(formattedTotalPrice)
 
       const orderData = {
