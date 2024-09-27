@@ -108,6 +108,7 @@ app.post('/api/product/export', async (req, res) => {
             discountManualPercent =0
             if (initialPrice== 0){
               initialPrice = product.price;
+              discountManualPercent = issuePersonalDiscount;
               
             }
           }
