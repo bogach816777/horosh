@@ -105,6 +105,9 @@ app.post('/api/product/export', async (req, res) => {
           }
           if (discountManualPercent > 0 ){
             initialPrice = product.price_old;
+            if (initialPrice== 0){
+              initialPrice = product.price;
+            }
           }
           
         }
