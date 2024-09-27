@@ -92,20 +92,26 @@ app.post('/api/product/export', async (req, res) => {
       console.log("ПІсля перевірки Перс знижка", issuePersonalDiscount)
       const formattedProducts = productsInfo.map(product => {
         let discountManualPercent = 0;
-      
+        let initialPrice = 0;
         // Перевірка, чи є знижка
         if (product.discount > 0) {
           discountManualPercent = product.discount; // Використовуємо знижку, якщо вона більше 0
+          initialPrice = product.price
         } else if (product.discount == 0) {
           // Обчислюємо відсоток знижки, якщо discount 0
           discountManualPercent = Math.round(((product.price_old - product.price) / product.price_old) * 100);
           if (discountManualPercent < 0 ){
             discountManualPercent = issuePersonalDiscount;
+            initialPrice = product.price
           }
+          if (discountManualPercent > 0 ){
+            initialPrice = product.price_old;
+          }
+          
         }
       //!!!!!!!!!!!!! якщо знижка на товар 0 додаємо знижку із перс. дісконту програми якщо дісконт 0 клієнта то підставити 5%
         return {
-          initialPrice: product.price,
+          initialPrice: initialPrice,
           offer: {
             externalId: product.article,
             article: product.article
