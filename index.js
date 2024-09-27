@@ -42,7 +42,7 @@ app.post('/api/product/export', async (req, res) => {
   const executeMainLogic = async () => {
     const response = await axios.get(apiUrl);
     const items = response.data.orders[0].items;
-
+    const personalDiscount = response.data.orders[0].customer.personalDiscount;
     const externalIds = items.map(item => item.offer.externalId);
     console.log(externalIds);
 
@@ -77,7 +77,19 @@ app.post('/api/product/export', async (req, res) => {
         price_old: product.price_old
       }));
       console.log(productsInfo);
-
+      let issuePersonalDiscount =0;
+      if(personalDiscount){
+        if (personalDiscount == 0){
+          issuePersonalDiscount = 5
+        } else{
+          issuePersonalDiscount = personalDiscount
+        }
+      }
+      else{
+        issuePersonalDiscount == 5
+      }
+     
+      console.log(`disountPersonal: ${issuePersonalDiscount}`);
       const formattedProducts = productsInfo.map(product => {
         let discountManualPercent = 0;
       
@@ -87,14 +99,18 @@ app.post('/api/product/export', async (req, res) => {
         } else if (product.price_old > 0) {
           // Обчислюємо відсоток знижки, якщо discount 0
           discountManualPercent = Math.round(((product.price_old - product.price) / product.price_old) * 100);
+          if (discountManualPercent ==0){
+            discountManualPercent == issuePersonalDiscount;
+          }
         }
-      
+      //!!!!!!!!!!!!! якщо знижка на товар 0 додаємо знижку із перс. дісконту програми якщо дісконт 0 клієнта то підставити 5%
         return {
+          initialPrice: product.price,
           offer: {
             externalId: product.article,
             article: product.article
           },
-          discountManualPercent: discountManualPercent
+          discountManualPercent: discountManualPercent 
         };
       });
       
