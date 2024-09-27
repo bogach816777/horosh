@@ -99,7 +99,8 @@ app.post('/api/product/export', async (req, res) => {
           initialPrice = product.price
         } else if (product.discount  ==0) {
           // Обчислюємо відсоток знижки, якщо discount 0
-          discountManualPercent = Math.round(((product.price_old - product.price) / product.price_old) * 100);
+         discountManualPercent = ((product.price_old - product.price) / product.price_old) * 100;
+
           if (discountManualPercent < 0 ){
             discountManualPercent = issuePersonalDiscount;
           }
@@ -107,6 +108,7 @@ app.post('/api/product/export', async (req, res) => {
             initialPrice = product.price_old;
             if (initialPrice== 0){
               initialPrice = product.price;
+              
             }
           }
           
