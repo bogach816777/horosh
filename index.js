@@ -114,7 +114,7 @@ app.post('/api/product/export', async (req, res) => {
         };
       });
       
-      console.log(formattedTotalPrice)
+      console.log(formattedProducts)
 
       const orderData = {
         items: formattedProducts,
