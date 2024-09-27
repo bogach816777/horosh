@@ -113,7 +113,7 @@ app.post('/api/product/export', async (req, res) => {
       };
       
       const params = {
-        site: 'testovyi-magazin',
+        site: 'masterzoo-ua-ua',
         order: JSON.stringify(orderData), // Передаємо оновлені items
       };
 
