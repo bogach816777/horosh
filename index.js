@@ -99,8 +99,8 @@ app.post('/api/product/export', async (req, res) => {
         } else if (product.discount == 0) {
           // Обчислюємо відсоток знижки, якщо discount 0
           discountManualPercent = Math.round(((product.price_old - product.price) / product.price_old) * 100);
-          if (discountManualPercent ==0){
-            discountManualPercent == issuePersonalDiscount;
+          if (discountManualPercent < 0 ){
+            discountManualPercent = issuePersonalDiscount;
           }
         }
       //!!!!!!!!!!!!! якщо знижка на товар 0 додаємо знижку із перс. дісконту програми якщо дісконт 0 клієнта то підставити 5%
