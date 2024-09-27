@@ -92,7 +92,7 @@ app.post('/api/product/export', async (req, res) => {
       console.log("ПІсля перевірки Перс знижка", issuePersonalDiscount)
       const formattedProducts = productsInfo.map(product => {
         let discountManualPercent = 0;
-        let initialPrice = 0;
+        let initialPrice = product.price;
         // Перевірка, чи є знижка
         if (product.discount > 0) {
           discountManualPercent = product.discount; // Використовуємо знижку, якщо вона більше 0
